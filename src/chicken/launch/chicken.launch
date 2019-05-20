@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find simple_camera)/launch/open_cam.launch" />
+  <include file="$(find motor_control)/launch/motor_control.launch" />
+</launch>
