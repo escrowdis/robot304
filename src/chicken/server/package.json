@@ -1,0 +1,14 @@
+{
+  "name": "server-chicken",
+  "version": "1.0.0",
+  "description": "server for robot304",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "eventemitter2": "^5.0.1"
+  }
+}
