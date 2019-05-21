@@ -1,29 +1,190 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
-<!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/eventemitter2@5.0.1/lib/eventemitter2.min.js"></script> -->
-<script type="text/javascript" src="3rdParty/jpegcanvas.min.js"></script>
+  <meta charset="utf-8" />
+  <script type="text/javascript" src="./node_modules/roslibjs-client/build/roslibjs-client.js"></script>
+  <script type="text/javascript" src="./node_modules/eventemitter2/lib/eventemitter2.js"></script>
+  <script type="text/javascript" src="./node_modules/mjpegcanvas/build/mjpegcanvas.min.js"></script>
+  <script type="text/javascript" src="./node_modules/nipplejs/dist/nipplejs.js"></script>
 
-<script type="text/javascript">
-  /**
-   * Setup all visualization elements when the page is loaded. 
-   */
-  function init() {
-    // Create the main viewer.
-    var viewer = new MJPEGCANVAS.Viewer({
+  <script type="text/javascript">
+    /**
+     * Setup all visualization elements when the page is loaded.
+     */
+    var scale = 0.8, ratio_w2h = 0.75
+    var viewer, ros
+    var ip = window.location.hostname
+    ip = (undefined === ip || "" === ip) ? 'localhost' : ip
+
+    function init() {
+      ros = new RosClient({
+        url: "ws://" + ip + ":9090"
+      });
+
+      // Create the canvas viewer.
+      var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+      w *= scale
+
+      viewer = new MJPEGCANVAS.Viewer({
       divID : 'mjpeg-stream',
-      host : window.location.hostname,
-      width : 640,
-      height : 480,
+      host : ip,
+      width : w,
+      height : w * ratio_w2h,
       topic : '/cam0/image_raw'
     });
-  }
-</script>
+    }
+
+    window.onresize = function dynamicResizeCanvas() {
+      var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+      w *= scale
+      viewer.width = w
+      viewer.canvas.width = w
+      viewer.height = w * ratio_w2h
+      viewer.canvas.height = w * ratio_w2h
+    }
+
+    function createNipple() {
+      var diameter_joystick = 100
+      var options = {
+        zone: document.getElementById('zone-joystick'),
+        color: '#FF6612',
+        restJoystick: true,
+        size: diameter_joystick
+      };
+      var manager = nipplejs.create(options);
+
+      // Get joystick data
+      var norm = 2 / diameter_joystick
+      manager.on('move', function(event, data) {
+        var forward = data.distance * Math.sin(data.angle.radian) * norm,
+            right = data.distance * Math.cos(data.angle.radian) * norm
+        ros.topic.publish(
+          '/motor_value',
+          'std_msgs/String',
+          { data : String(forward + ' ' + right) }
+        )
+      })
+    }
+  </script>
 </head>
 
 <body onload="init()">
-  <h1>Simple MJPEG Canvas Example</h1>
-  <div id="mjpeg-stream"></div>
+  <div class="container">
+    <h1>Robot304</h1>
+
+    <!-- joystick -->
+    <div id="zone-joystick" class="zone dynamic active" style="touch-action: none;">
+    <script type="text/javascript">
+        createNipple()
+    </script>
+
+    <!-- stream -->
+    <div class="stream">
+      <div id="mjpeg-stream">
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
+
+<style>
+  body {
+  margin: auto;
+  padding: 0;
+  margin-top: 20px;
+  max-width: 1024px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#buttons {
+  position: relative;
+  border: solid 1px #aaa;
+  display: inline-block;
+  width: 100%;
+  border-radius: 10px;
+  height: 50px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.button {
+  display: inline-block;
+  background: #ccc;
+  color: black;
+  height: 50px;
+  width: 33%;
+  margin: 0;
+  margin-right: -3px;
+  text-align: center;
+  line-height: 45px;
+  font-size: 25px;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.button:hover {
+  background: #eee;
+}
+
+.button:active {
+  background: #ddd;
+}
+
+.button.active {
+  color: white;
+  background: #888;
+}
+
+.button:nth-child(2) {
+  width: 34%;
+  border-left: solid 1px #aaa;
+  border-right: solid 1px #aaa;
+}
+
+.highlight {
+  display: none;
+}
+
+.highlight.active {
+  display: block;
+}
+
+.zone {
+  display: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+}
+
+.zone.active {
+  display: block;
+}
+
+.zone > h1 {
+  position: absolute;
+  padding: 10px 10px;
+  margin: 0;
+  color: white;
+  right: 0;
+  bottom: 0;
+}
+
+/* .zone.dynamic {
+  background: rgba(0, 0, 255, 0.1);
+} */
+
+.zone.nipple {
+  position: relative !important;
+}
+
+
+</style>
