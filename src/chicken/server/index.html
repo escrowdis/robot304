@@ -6,6 +6,7 @@
   <script type="text/javascript" src="./node_modules/eventemitter2/lib/eventemitter2.js"></script>
   <script type="text/javascript" src="./node_modules/mjpegcanvas/build/mjpegcanvas.min.js"></script>
   <script type="text/javascript" src="./node_modules/nipplejs/dist/nipplejs.js"></script>
+  <script type="text/javascript" src="./src/joystick2motor.js"></script>
 
   <script type="text/javascript">
     /**
@@ -44,24 +45,33 @@
     }
 
     function createNipple() {
-      var diameter_joystick = 100
+      var diameter_joystick = 250
       var options = {
         zone: document.getElementById('zone-joystick'),
         color: '#FF6612',
-        restJoystick: true,
-        size: diameter_joystick
+        size: diameter_joystick,
+        mode: 'semi',
+        catchDistance: 300
       };
       var manager = nipplejs.create(options);
 
       // Get joystick data
-      var norm = 2 / diameter_joystick
+      var norm = 2 * 127 / diameter_joystick
       manager.on('move', function(event, data) {
         var forward = data.distance * Math.sin(data.angle.radian) * norm,
             right = data.distance * Math.cos(data.angle.radian) * norm
+
+        // convert joystick value to motor's value. Both: [-128, 127]
+        val_motor = joystick2motor(right, forward)
+
         ros.topic.publish(
           '/motor_value',
-          'std_msgs/String',
-          { data : String(forward + ' ' + right) }
+          'geometry_msgs/Point32',
+          { 
+            x: val_motor[0],  // L
+            y: val_motor[1],  // R
+            z: 0              // null
+          }
         )
       })
     }
@@ -73,7 +83,7 @@
     <h1>Robot304</h1>
 
     <!-- joystick -->
-    <div id="zone-joystick" class="zone dynamic active" style="touch-action: none;">
+    <div id="zone-joystick" class="zone active" style="touch-action: none;">
     <script type="text/javascript">
         createNipple()
     </script>
@@ -177,10 +187,6 @@
   right: 0;
   bottom: 0;
 }
-
-/* .zone.dynamic {
-  background: rgba(0, 0, 255, 0.1);
-} */
 
 .zone.nipple {
   position: relative !important;
