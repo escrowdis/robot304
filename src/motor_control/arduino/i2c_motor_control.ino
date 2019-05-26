@@ -3,6 +3,10 @@
 
 //#define TEST_CODE
 #define DEBUG
+#define UNO
+#ifndef UNO
+  #define MEGA2560
+#endif
 
 // I2C
 #define ADDR_SLAVE 0x04
@@ -11,11 +15,11 @@
 #define ID_IN_MOTOR_RIGHT 1
 uint8_t data_i2c_in[LEN_DATA_I2C_IN];
 int id_in = 0;
-#define LEN_DATA_I2C_OUT 4
-#define ID_OUT_POS_LEFT 0
-#define ID_OUT_POS_RIGHT 1
-#define ID_OUT_VEL_LEFT 2
-#define ID_OUT_VEL_RIGHT 3
+#define LEN_DATA_I2C_OUT 16
+#define ID_OUT_ODOM_LEFT 0
+#define ID_OUT_ODOM_RIGHT 4
+#define ID_OUT_VEL_LEFT 8
+#define ID_OUT_VEL_RIGHT 12
 uint8_t data_i2c_out[LEN_DATA_I2C_OUT];
 
 // Motor
@@ -29,8 +33,13 @@ float pwm_mr = 0;
 // left
 // IN1: LOW IN2: +    -> forward
 // IN1: +   IN2: LOW  -> backward
-#define IN1 11
-#define IN2 12
+#ifdef UNO
+  #define IN1 5
+  #define IN2 6
+#elif MEGA2560
+  #define IN1 11
+  #define IN2 12
+#endif
 // right
 // IN3: +   IN4: LOW  -> forward
 // IN3: LOW IN4: +    -> backward
@@ -40,7 +49,11 @@ float pwm_mr = 0;
 #define ENC_A_LEFT 2
 #define ENC_B_LEFT 4
 #define ENC_A_RIGHT 3
-#define ENC_B_RIGHT 5
+#ifdef UNO
+  #define ENC_B_RIGHT 7
+#elif MEGA2560
+  #define ENC_B_RIGHT 5
+#endif
 
 const float EPSILON = 0.0001;
 // PPR (Pulses Per Revolution)
@@ -50,7 +63,13 @@ const float CIRCUMFERENCE = M_PI * 0.035;
 const float VAL_ENC2RPM = 60.0 / (2.0 * ENCODEROUTPUT);
 const float VAL_RPM2VEL = CIRCUMFERENCE / 60.0;
 // NOTE: forward is positive for pos & vel
+// TODO: add mutex
 float rpm_l = 0, rpm_r = 0, vel_l = 0, vel_r = 0, odom_l = 0, odom_r = 0;
+
+union float2Bytes {
+  char buf[4];
+  float val;
+} conv_f2b;
 
 volatile long enc_pul_l = 0;
 volatile long enc_pul_r = 0;
@@ -58,8 +77,10 @@ volatile long enc_pul_r = 0;
 volatile int ts_prev_enc = 0, ts_now_enc = 0, dt = 0, ts_interval = 1000;
 const float TS_MS2S = 0.001;
 
+// unit: ms
+const float interval2Compute = 250;
 void computeEncoder();
-TimedAction computeEncoderThread = TimedAction(500, computeEncoder);
+TimedAction computeEncoderThread = TimedAction(interval2Compute, computeEncoder);
 
 // Test code
 const int len_foo = 8;
@@ -171,7 +192,24 @@ void receiveData(int byteCount) {
 
 // callback for sending data
 void sendData() {
-  // TODO: send encoder value, speed. positive value?!
+  // disassemble pos, vel to 8 bit for transfer
+  conv_f2b.val = odom_l;
+  for (int i = 0; i < 4; ++i) {
+    data_i2c_out[ID_OUT_ODOM_LEFT + i] = conv_f2b.buf[i];
+  }
+  conv_f2b.val = odom_r;
+  for (int i = 0; i < 4; ++i) {
+    data_i2c_out[ID_OUT_ODOM_RIGHT + i] = conv_f2b.buf[i];
+  }
+  conv_f2b.val = vel_l;
+  for (int i = 0; i < 4; ++i) {
+    data_i2c_out[ID_OUT_VEL_LEFT + i] = conv_f2b.buf[i];
+  }
+  conv_f2b.val = vel_r;
+  for (int i = 0; i < 4; ++i) {
+    data_i2c_out[ID_OUT_VEL_RIGHT + i] = conv_f2b.buf[i];
+  }
+
   Wire.write(data_i2c_out, LEN_DATA_I2C_OUT);
 
 #ifdef DEBUG
@@ -180,6 +218,15 @@ void sendData() {
     Serial.print(data_i2c_out[i]);
     Serial.print(" ");
   }
+  Serial.println();
+  Serial.println("equal to");
+  Serial.print(odom_l, 6);
+  Serial.print(" ");
+  Serial.print(odom_r, 6);
+  Serial.print(" ");
+  Serial.print(vel_l, 6);
+  Serial.print(" ");
+  Serial.print(vel_r, 6);
   Serial.println();
 #endif
 }
@@ -222,13 +269,11 @@ void computeEncoder() {
     rpm_l = (float)enc_pul_l * val;
     rpm_r = (float)enc_pul_r * val;
 
-    data_i2c_out[ID_OUT_VEL_LEFT] = vel_l = rpm_l * VAL_RPM2VEL;
-    data_i2c_out[ID_OUT_VEL_RIGHT] = vel_r = -rpm_r * VAL_RPM2VEL;
+    vel_l = rpm_l * VAL_RPM2VEL;
+    vel_r = -rpm_r * VAL_RPM2VEL;   // convert direction
 
     odom_l += vel_l * dt * TS_MS2S;
-    odom_r += -vel_r * dt * TS_MS2S;
-    data_i2c_out[ID_OUT_POS_LEFT] = odom_l;
-    data_i2c_out[ID_OUT_POS_RIGHT] = odom_r;
+    odom_r += vel_r * dt * TS_MS2S;
 
 #ifdef DEBUG
     if (abs(pwm_ml - 0.0) > EPSILON && abs(pwm_mr - 0.0) > EPSILON) {
@@ -251,7 +296,7 @@ void computeEncoder() {
       Serial.println();
     }
 #endif
-    
+
     enc_pul_l = enc_pul_r = 0;
   }
 }
