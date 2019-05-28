@@ -1,3 +1,5 @@
 <launch>
-    <node name="motor_control" pkg="motor_control" type="motor.py" output="screen" />
+    <group ns="motor">
+        <node name="motor_control" pkg="motor_control" type="motor.py" output="screen" />
+    </group>
 </launch>

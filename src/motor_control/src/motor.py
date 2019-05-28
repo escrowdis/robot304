@@ -64,7 +64,7 @@ def callback(data):
 def listener():
   global threadRunning, threadRead
   rospy.init_node('motor', anonymous = True)
-  rospy.Subscriber("motor_value", geometry_msgs.msg.Point32, callback)
+  rospy.Subscriber("pwm_value", geometry_msgs.msg.Point32, callback)
   rospy.on_shutdown(stop)
 
   threadRunning = True
