@@ -2,7 +2,7 @@
 <launch>
 
 	<arg name="path_save"   default="~/data"/>
-	<arg name="topic"  	default=""/>
+	<arg name="topic"  	default="/cam0/image_raw /motor/pwm_value"/>
 	<arg name="file_name"  	default="test"/>
 
 	<group ns="record">

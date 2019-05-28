@@ -2,11 +2,16 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <script type="text/javascript" src="./node_modules/roslibjs-client/build/roslibjs-client.js"></script>
+  <script type="text/javascript" src="./node_modules/roslib/build/roslib.min.js"></script>
   <script type="text/javascript" src="./node_modules/eventemitter2/lib/eventemitter2.js"></script>
   <script type="text/javascript" src="./node_modules/mjpegcanvas/build/mjpegcanvas.min.js"></script>
   <script type="text/javascript" src="./node_modules/nipplejs/dist/nipplejs.js"></script>
   <script type="text/javascript" src="./src/joystick2motor.js"></script>
+
+  <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
 
   <script type="text/javascript">
     /**
@@ -16,9 +21,10 @@
     var viewer, ros
     var ip = window.location.hostname
     ip = (undefined === ip || "" === ip) ? 'localhost' : ip
+    var recording = false
 
     function init() {
-      ros = new RosClient({
+      ros = new ROSLIB.Ros({
         url: "ws://" + ip + ":9090"
       });
 
@@ -27,12 +33,12 @@
       w *= scale
 
       viewer = new MJPEGCANVAS.Viewer({
-      divID : 'mjpeg-stream',
-      host : ip,
-      width : w,
-      height : w * ratio_w2h,
-      topic : '/cam0/image_raw'
-    });
+        divID : 'mjpeg-stream',
+        host : ip,
+        width : w,
+        height : w * ratio_w2h,
+        topic : '/cam0/image_raw'
+      });
     }
 
     window.onresize = function dynamicResizeCanvas() {
@@ -64,24 +70,76 @@
         // convert joystick value to motor's value. Both: [-128, 127]
         val_motor = joystick2motor(right, forward)
 
-        ros.topic.publish(
-          '/motor_value',
-          'geometry_msgs/Point32',
-          { 
-            x: val_motor[0],  // L
-            y: val_motor[1],  // R
-            z: 0              // null
-          }
-        )
+        var topic_pwm = new ROSLIB.Topic({
+          ros: ros,
+          name: '/motor/pwm_value',
+          messageType: 'geometry_msgs/Point32'
+        })
+        var msg_pwm = new ROSLIB.Message({
+          x: val_motor[0],  // L
+          y: val_motor[1],  // R
+          z: 0              // null
+        })
+        topic_pwm.publish(msg_pwm)
+      })
+    }
+
+    function recordButton() {
+      var status = !recording
+      var srv_record = new ROSLIB.Service({
+        ros: ros,
+        name: '/record/cmd',
+        serviceType: 'record_ros/String_cmd'
+      })
+
+      var req_record = new ROSLIB.ServiceRequest({
+        cmd: status ? 'record' : 'stop'
+      })
+      srv_record.callService(req_record, 
+      function(res) {
+        var msg = JSON.stringify(res.res)
+        if (JSON.stringify("starting recorder") === msg) {
+          recording = true
+        }
+        else if (JSON.stringify("stopping recorder") === msg) {
+          recording = false
+        }
+
+        img = document.getElementById('record-img')
+        text = document.getElementById('record-text')
+
+        if (recording) {
+          img.src = "img/recordOn.png"
+          text.innerHTML = "Recording..."
+        } else {
+          img.src = "img/recordOff.png"
+          text.innerHTML = "Record Button"
+        }
+      },
+      function (err) {
+        console.log("[ERR]: " + err);
       })
     }
   </script>
 </head>
 
 <body onload="init()">
-  <div class="container">
-    <h1>Robot304</h1>
+  <!-- Image and text -->
+  <nav class="navbar navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+      <!-- <img src="/docs/4.3/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt=""> -->
+      ROBOT 304
+    </a>
 
+    <div class="record">
+      <button class="btn" onclick="recordButton()">
+        <img id="record-img" src="img/recordOff.png">
+      </button>
+      <p id="record-text">Record Button</p>
+    </div>
+  </nav>
+
+  <div class="container">
     <!-- joystick -->
     <div id="zone-joystick" class="zone active" style="touch-action: none;">
     <script type="text/javascript">
@@ -99,13 +157,35 @@
 </html>
 
 <style>
-  body {
+.navbar {
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.navbar .navbar-brand,
+.navbar .navbar-brand:hover {
+  font-size: 3em;
+  font-weight: 700;
+  color: #f4721a;
+}
+
+.record {
+  position: relative;
+  right: 0;
+}
+
+.record #record-text {
+  text-align: center;
+}
+
+body {
   margin: auto;
   padding: 0;
   margin-top: 20px;
   max-width: 1024px;
   margin-left: auto;
   margin-right: auto;
+  font-family: 'Roboto';
 }
 
 #buttons {

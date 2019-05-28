@@ -15,6 +15,8 @@ public:
 
 private:
 
+    void exit();
+
     bool string_command(record_ros::String_cmd::Request& req, record_ros::String_cmd::Response& res);
 
 private:
@@ -27,3 +29,4 @@ private:
 
 
 #endif
+
