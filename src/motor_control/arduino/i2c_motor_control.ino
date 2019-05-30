@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <TimedAction.h>  // for multi-thread
+#include <PID_v1.h>
 
 //#define TEST_CODE
 #define DEBUG
@@ -7,28 +8,6 @@
 #ifndef UNO
   #define MEGA2560
 #endif
-
-// I2C
-#define ADDR_SLAVE 0x04
-#define LEN_DATA_I2C_IN 2
-#define ID_IN_MOTOR_LEFT 0
-#define ID_IN_MOTOR_RIGHT 1
-uint8_t data_i2c_in[LEN_DATA_I2C_IN];
-int id_in = 0;
-#define LEN_DATA_I2C_OUT 16
-#define ID_OUT_ODOM_LEFT 0
-#define ID_OUT_ODOM_RIGHT 4
-#define ID_OUT_VEL_LEFT 8
-#define ID_OUT_VEL_RIGHT 12
-uint8_t data_i2c_out[LEN_DATA_I2C_OUT];
-
-// Motor
-const int MAX_MOTOR_VAL = 220;
-const float SCALE_MOTOR = (float)MAX_MOTOR_VAL / 128.0;
-const float SHIFT_MOTOR = -128.0;
-// left/right motor values
-float pwm_ml = 0;
-float pwm_mr = 0;
 
 // left
 // IN1: LOW IN2: +    -> forward
@@ -55,21 +34,31 @@ float pwm_mr = 0;
   #define ENC_B_RIGHT 5
 #endif
 
-const float EPSILON = 0.0001;
-// PPR (Pulses Per Revolution)
-const float ENCODEROUTPUT = 11.0;
-// circumference of the wheel. unit: meter
-const float CIRCUMFERENCE = M_PI * 0.035;
-const float VAL_ENC2RPM = 60.0 / (2.0 * ENCODEROUTPUT);
-const float VAL_RPM2VEL = CIRCUMFERENCE / 60.0;
-// NOTE: forward is positive for pos & vel
-// TODO: add mutex
-float rpm_l = 0, rpm_r = 0, vel_l = 0, vel_r = 0, odom_l = 0, odom_r = 0;
+// I2C
+#define ADDR_SLAVE 0x04
+#define LEN_DATA_I2C_IN 2
+#define ID_IN_MOTOR_LEFT 0
+#define ID_IN_MOTOR_RIGHT 1
+uint8_t data_i2c_in[LEN_DATA_I2C_IN];
+int id_in = 0;
+#define LEN_DATA_I2C_OUT 16
+#define ID_OUT_ODOM_LEFT 0
+#define ID_OUT_ODOM_RIGHT 4
+#define ID_OUT_VEL_LEFT 8
+#define ID_OUT_VEL_RIGHT 12
+uint8_t data_i2c_out[LEN_DATA_I2C_OUT];
 
 union float2Bytes {
   char buf[4];
   float val;
 } conv_f2b;
+
+// Motor
+const int MAX_MOTOR_VAL = 220;
+const float SCALE_MOTOR = (float)MAX_MOTOR_VAL / 128.0;
+const float SHIFT_MOTOR = -128.0;
+// left/right motor values [-MAX_MOTOR_VAL, MAX_MOTOR_VAL]
+volatile float pwm_ml = 0, pwm_mr = 0, cur_pwm_ml = 0, cur_pwm_mr = 0;
 
 volatile long enc_pul_l = 0;
 volatile long enc_pul_r = 0;
@@ -77,10 +66,24 @@ volatile long enc_pul_r = 0;
 volatile int ts_prev_enc = 0, ts_now_enc = 0, dt = 0, ts_interval = 1000;
 const float TS_MS2S = 0.001;
 
-// unit: ms
-const float interval2Compute = 250;
+//PID
+double Kp = 0.5, Ki = 0.1, Kd = 0.01;
+double pid_setpoint = 0.0, pid_input = 0.0, pid_output;
+PID pwmPID(&pid_input, &pid_output, &pid_setpoint, Kp, Ki, Kd, DIRECT);
+
+const float EPSILON = 0.0001;
+// PPR (Pulses Per Revolution)
+const float ENCODEROUTPUT = 11.0;
+// circumference of the wheel. unit: meter
+const float CIRCUMFERENCE = M_PI * 0.035;
+const float VAL_ENC2RPM = 60.0 / (2.0 * ENCODEROUTPUT);
+const float VAL_RPM2VEL = CIRCUMFERENCE / 60.0;
+// NOTE: forward is positive
+// TODO: add mutex
+float rpm_l = 0, rpm_r = 0, vel_l = 0, vel_r = 0, odom_l = 0, odom_r = 0;
+
 void computeEncoder();
-TimedAction computeEncoderThread = TimedAction(interval2Compute, computeEncoder);
+TimedAction computeEncoderThread = TimedAction(250, computeEncoder);
 
 // Test code
 const int len_foo = 8;
@@ -97,6 +100,14 @@ void setup() {
   Serial.println("motor's i2c control");
   Serial.println("-------------------");
 #endif
+
+  for (int i = 0; i < LEN_DATA_I2C_IN; ++i) {
+    data_i2c_in[i] = 128;
+  }
+
+ //turn the PID on
+  pwmPID.SetMode(AUTOMATIC);
+  pwmPID.SetOutputLimits(-(double)MAX_MOTOR_VAL, (double)MAX_MOTOR_VAL);
 
   // Init I2C as slave
   Wire.begin(ADDR_SLAVE);
@@ -187,7 +198,12 @@ void receiveData(int byteCount) {
   Serial.println();
 #endif
 
-  motorControl();
+  pwm_ml = ((float)data_i2c_in[ID_IN_MOTOR_LEFT] + SHIFT_MOTOR) * SCALE_MOTOR;
+  pwm_mr = ((float)data_i2c_in[ID_IN_MOTOR_RIGHT] + SHIFT_MOTOR) * SCALE_MOTOR;
+  pwm_ml = (pwm_ml < MAX_MOTOR_VAL ? pwm_ml : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_ml : -MAX_MOTOR_VAL;
+  pwm_mr = (pwm_mr < MAX_MOTOR_VAL ? pwm_mr : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_mr : -MAX_MOTOR_VAL;
+  cur_pwm_ml = pwm_ml;
+  cur_pwm_mr = pwm_mr;
 }
 
 // callback for sending data
@@ -231,6 +247,105 @@ void sendData() {
 #endif
 }
 
+void computeEncoder() {
+  ts_now_enc = millis();
+  dt = ts_now_enc - ts_prev_enc;
+  if (dt > ts_interval) {
+    ts_prev_enc = ts_now_enc;
+
+    // convert direction
+    float val = VAL_ENC2RPM / (float)dt;
+    rpm_l = (float)enc_pul_l * val;
+    rpm_r = -(float)enc_pul_r * val;
+
+    vel_l = rpm_l * VAL_RPM2VEL;
+    vel_r = rpm_r * VAL_RPM2VEL;
+
+    odom_l += vel_l * dt * TS_MS2S;
+    odom_r += vel_r * dt * TS_MS2S;
+
+    pidControl();
+
+#ifdef DEBUG
+    if (abs(pwm_ml - 0.0) > EPSILON && abs(pwm_mr - 0.0) > EPSILON) {
+      Serial.print("[encoder] l: ");
+      Serial.print(enc_pul_l);
+      Serial.print(" r: ");
+      Serial.println(enc_pul_r);
+      Serial.print("est. rpm_l: ");
+      Serial.print(rpm_l, 6);
+      Serial.print(" rpm_r: ");
+      Serial.println(rpm_r, 6);
+      Serial.print("est. vel_l: ");
+      Serial.print(vel_l, 6);
+      Serial.print(" vel_r: ");
+      Serial.println(vel_r, 6);
+      Serial.print("est. pos_l: ");
+      Serial.print(odom_l, 6);
+      Serial.print(" pos_r: ");
+      Serial.print(odom_r, 6);
+      Serial.println();
+    }
+#endif
+
+    enc_pul_l = enc_pul_r = 0;
+  }
+}
+
+void pidControl(){  
+  if (abs(vel_r - 0.0) > EPSILON &&
+      abs(pwm_mr - 0.0) > EPSILON) {
+      pid_input = (double)vel_l;
+      pid_setpoint = (double)(vel_r * pwm_ml / pwm_mr);
+      pwmPID.Compute();
+      float dev = (float)pid_output * pwm_mr / vel_r;      
+      cur_pwm_ml = cur_pwm_ml + dev;
+
+#ifdef DEBUG
+      Serial.println("PID ***");
+      Serial.print("In: ");
+      Serial.print(pid_input, 6);
+      Serial.print("\tsp: ");
+      Serial.print(pid_setpoint, 6);
+      Serial.print("\tout: ");
+      Serial.println(pid_output, 6);
+      Serial.println(dev, 6);
+      Serial.print("pwm_ml set to: ");
+      Serial.println(pwm_ml, 6);
+#endif
+  }
+
+#ifdef DEBUG
+  Serial.println("-----------------pidControl-----------------");
+  Serial.print("target to motor: ");
+  Serial.print(pwm_ml);
+  Serial.print("\t");
+  Serial.print(pwm_mr);
+  Serial.println();
+  Serial.print("output to motor: ");
+  Serial.print(cur_pwm_ml);
+  Serial.print("\t");
+  Serial.print(cur_pwm_mr);
+  Serial.println();
+#endif
+
+  if (cur_pwm_ml >= 0.0) {
+    analogWrite(IN1, LOW);
+    analogWrite(IN2, (uint8_t)cur_pwm_ml);
+  } else {
+    analogWrite(IN1, (uint8_t)-cur_pwm_ml);
+    analogWrite(IN2, LOW);
+  }
+
+  if (cur_pwm_mr >= 0.0) {
+    analogWrite(IN3, (uint8_t)cur_pwm_mr);
+    analogWrite(IN4, LOW);
+  } else {
+    analogWrite(IN3, LOW);
+    analogWrite(IN4, (uint8_t)-cur_pwm_mr);
+  }
+}
+
 void testMotorControl() {
   Serial.println("M<ooootor> PWM set to: ");
   Serial.println(foo[id_foo]);
@@ -259,75 +374,3 @@ void testMotorControl() {
   Serial.println("M<ooootor> - END");
 }
 
-void computeEncoder() {
-  ts_now_enc = millis();
-  dt = ts_now_enc - ts_prev_enc;
-  if (dt > ts_interval) {
-    ts_prev_enc = ts_now_enc;
-
-    float val = VAL_ENC2RPM / (float)dt;
-    rpm_l = (float)enc_pul_l * val;
-    rpm_r = (float)enc_pul_r * val;
-
-    vel_l = rpm_l * VAL_RPM2VEL;
-    vel_r = -rpm_r * VAL_RPM2VEL;   // convert direction
-
-    odom_l += vel_l * dt * TS_MS2S;
-    odom_r += vel_r * dt * TS_MS2S;
-
-#ifdef DEBUG
-    if (abs(pwm_ml - 0.0) > EPSILON && abs(pwm_mr - 0.0) > EPSILON) {
-      Serial.print("[encoder] l: ");
-      Serial.print(enc_pul_l);
-      Serial.print(" r: ");
-      Serial.println(enc_pul_r);
-      Serial.print("est. rpm_l: ");
-      Serial.print(rpm_l, 6);
-      Serial.print(" rpm_r: ");
-      Serial.println(rpm_r, 6);
-      Serial.print("est. vel_l: ");
-      Serial.print(vel_l, 6);
-      Serial.print(" vel_r: ");
-      Serial.println(vel_r, 6);
-      Serial.print("est. pos_l: ");
-      Serial.print(odom_l, 6);
-      Serial.print(" pos_r: ");
-      Serial.print(odom_r, 6);
-      Serial.println();
-    }
-#endif
-
-    enc_pul_l = enc_pul_r = 0;
-  }
-}
-
-void motorControl() {
-  pwm_ml = ((float)data_i2c_in[ID_IN_MOTOR_LEFT] + SHIFT_MOTOR) * SCALE_MOTOR;
-  pwm_mr = ((float)data_i2c_in[ID_IN_MOTOR_RIGHT] + SHIFT_MOTOR) * SCALE_MOTOR;
-  pwm_ml = (pwm_ml < MAX_MOTOR_VAL ? pwm_ml : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_ml : -MAX_MOTOR_VAL;
-  pwm_mr = (pwm_mr < MAX_MOTOR_VAL ? pwm_mr : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_mr : -MAX_MOTOR_VAL;
-#ifdef DEBUG
-  Serial.print("output to motor: ");
-  Serial.print(pwm_ml);
-  Serial.print(" ");
-  Serial.print(pwm_mr);
-  Serial.println();
-#endif
-
-  // output motor
-  if (pwm_ml >= 0.0) {
-    analogWrite(IN1, LOW);
-    analogWrite(IN2, (uint8_t)pwm_ml);
-  } else {
-    analogWrite(IN1, (uint8_t)-pwm_ml);
-    analogWrite(IN2, LOW);
-  }
-
-  if (pwm_mr >= 0.0) {
-    analogWrite(IN3, (uint8_t)pwm_mr);
-    analogWrite(IN4, LOW);
-  } else {
-    analogWrite(IN3, LOW);
-    analogWrite(IN4, (uint8_t)-pwm_mr);
-  }
-}
