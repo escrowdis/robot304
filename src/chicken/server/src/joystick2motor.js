@@ -36,3 +36,5 @@ function joystick2motor(joyX, joyY) {
 
     return [motorL, motorR]
 }
+
+export default joystick2motor
