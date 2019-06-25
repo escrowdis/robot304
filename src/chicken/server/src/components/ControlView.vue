@@ -2,20 +2,41 @@
   <div class="controlview">
     <!-- joystick -->
     <div id="zone-joystick" class="zone active" style="touch-action: none;">
-      <!-- stream -->
-      <div class="stream">
-        <div id="mjpeg-stream">
+      <div class="view">
+        <!-- stream -->
+        <div class="stream">
+          <div id="mjpeg-stream">
+          </div>
         </div>
+        <!-- ros 3d -->
       </div>
+      <div class="info">
+        <vs-list>
+          <vs-list-header title="Motor Control"></vs-list-header>
+          <vs-list-item title="Joystick Value">
+            {{ valJoystick[0] | numFilter2Int }}, {{ valJoystick[1] |numFilter2Int }}
+          </vs-list-item>
+          <vs-list-item title="PWM Output">
+            {{ valMotor[0] | numFilter2Int }}, {{ valMotor[1] | numFilter2Int }}
+          </vs-list-item>
+          <!-- <vs-list-header title="ROS" color="success"></vs-list-header>
+          <vs-list-item title="Rosbag Recording"></vs-list-item>
+          <vs-list-item title="XXXX" subtitle="YYYY"></vs-list-item> -->
+        </vs-list>
+      </div>  
     </div>
   </div>
 </template>
 
 <script>
+import Vue from 'vue'
 import nipplejs from 'nipplejs/dist/nipplejs'
 import joystick2motor from '@/joystick2motor'
 import MJPEGCANVAS from 'mjpegcanvas/build/mjpegcanvas'
 import ROSLIB from 'roslib/build/roslib'
+import { vsList } from 'vuesax'
+
+Vue.use(vsList)
 
 export default {
   name: 'ControlView',
@@ -25,11 +46,17 @@ export default {
   data: function () {
     return {
       sizeRatioCanvas: 0.75,
-      scale: 0.8,
+      scale: 0.5,
       maxWidthCanvas: 640,
       widthScreen: document.body.clientWidth,
       viewer: null,
-      valMotor: null,
+      valMotor: [0, 0],
+      valJoystick: [0, 0]
+    }
+  },
+  filters: {
+    numFilter2Int: function (val) {
+      return parseFloat(val).toFixed(0)
     }
   },
   mounted: function () {
@@ -80,6 +107,7 @@ export default {
       manager.on('move', function(event, data) {
         var forward = data.distance * Math.sin(data.angle.radian) * norm,
             right = data.distance * Math.cos(data.angle.radian) * norm
+        vm.valJoystick = [forward, right]
 
         // convert joystick value to motor's value. Both: [-128, 127]
         vm.valMotor = joystick2motor(right, forward)
@@ -138,8 +166,17 @@ a {
 .zone.nipple {
   position: relative !important;
 }
-.stream {
-  position: absolute;
-  left: 0;
+.view {
+  position: relative;
+
+}
+.view .stream {
+  position: relative;
+  /* related to variable scale */
+  left: -25%;
+}
+.view .info {
+  position: relative;
+  text-align: left;
 }
 </style>
