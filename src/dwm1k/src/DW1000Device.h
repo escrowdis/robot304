@@ -40,7 +40,7 @@ public:
     ~DW1000Device();
 
     //setters:
-    void setReplyTime(unsigned int replyDelayTimeUs);
+    void setReplyTime(uint16_t replyDelayTimeUs);
     void setAddress(char address[]);
     void setAddress(byte* address);
     void setShortAddress(byte address[]);
@@ -50,20 +50,20 @@ public:
     void setFPPower(float power);
     void setQuality(float quality);
 
-    void setReplyDelayTime(int time) { _replyDelayTimeUS = time; }
+    void setReplyDelayTime(uint16_t time) { _replyDelayTimeUS = time; }
 
-    void setIndex(short index) { _index = index; }
+    void setIndex(int8_t index) { _index = index; }
 
     //getters
-    unsigned int getReplyTime() { return _replyDelayTimeUS; }
+    uint16_t getReplyTime() { return _replyDelayTimeUS; }
 
     byte* getByteAddress();
 
-    short getIndex() { return _index; }
+    int8_t getIndex() { return _index; }
 
     //String getAddress();
     byte* getByteShortAddress();
-    unsigned int getShortAddress();
+    uint16_t getShortAddress();
     //String getShortAddress();
 
     float getRange();
@@ -91,14 +91,14 @@ private:
     //device ID
     byte         _ownAddress[8];
     byte         _shortAddress[2];
-    timepoint         _activity;
-    unsigned int _replyDelayTimeUS;
-    short        _index;
+    timepoint    _activity;
+    uint16_t     _replyDelayTimeUS;
+    int8_t       _index; // not used
 
-    int _range;
-    int _RXPower;
-    int _FPPower;
-    int _quality;
+    int16_t _range;
+    int16_t _RXPower;
+    int16_t _FPPower;
+    int16_t _quality;
 
     void randomShortAddress();
 

@@ -2,22 +2,15 @@
 #include "DW1000Device.h"
 
 void newRange() {
-    //insert to the message
-    // sender.newDevice(DW1000Ranging.getDistantDevice()->getShortAddress(),
-    //                  DW1000Ranging.getDistantDevice()->getRange() - SENSOR_OFFSET);
     printf("$ %x\t%f\n",
         DW1000Ranging.getDistantDevice()->getShortAddress(),
         DW1000Ranging.getDistantDevice()->getRange());
 }
 
 void newDevice(DW1000Device* device) {
-    //add device from total no of devices around
-    // sender.addDevice();
 }
 
 void inactiveDevice(DW1000Device* device) {
-    //delete device from total no of devices around
-    // sender.deleteDevice();
 }
 
 int main(int argc, char* argv) {

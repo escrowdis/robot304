@@ -78,10 +78,9 @@ public:
 
 
 private:
-    int  _seqNumber;
-    void reverseArray(byte to[], byte from[], int size);
-
-
+	uint8_t _seqNumber = 0;
+	void reverseArray(byte to[], byte from[], int16_t size);
+	
 };
 
 

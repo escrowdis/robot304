@@ -142,13 +142,16 @@ boolean DW1000Mac::decodeLongMACFrame(byte frame[], byte address[]) {
 
 
 void DW1000Mac::incrementSeqNumber() {
-    _seqNumber++;
-    if(_seqNumber > 255)
-        _seqNumber = 0;
+	// normally overflow of uint8 automatically resets to 0 if over 255
+	// but if-clause seems safer way
+	if(_seqNumber == 255)
+		_seqNumber = 0;
+	else
+		_seqNumber++;
 }
 
-void DW1000Mac::reverseArray(byte to[], byte from[], int size) {
-    for(int i = 0; i < size; i++) {
+void DW1000Mac::reverseArray(byte to[], byte from[], int16_t size) {
+	for(int16_t i = 0; i < size; i++) {
         *(to+i) = *(from+size-i-1);
     }
 
