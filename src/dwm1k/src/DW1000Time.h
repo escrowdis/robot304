@@ -39,8 +39,6 @@
 #include "glue.h"
 #include <chrono>
 
-using timepoint = std::chrono::time_point<std::chrono::system_clock>;
-
 class DW1000Time {
 public:
     // Time resolution in micro-seconds of time based registers/values.

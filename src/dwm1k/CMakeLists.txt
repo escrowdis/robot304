@@ -3,7 +3,6 @@ project(dwm1k)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
-find_package(Threads)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -136,13 +135,14 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node
-src/dwm1k_node.cpp
-src/DW1000Mac.cpp
-src/DW1000Ranging.cpp
-src/DW1000.cpp
-src/DW1000Time.cpp
-src/DW1000Device.cpp
-src/jetsonTX2GPIO/jetsonGPIO.c
+  src/dwm1k_node.cpp
+  src/dwm1k.cpp
+  src/DW1000Mac.cpp
+  src/DW1000Ranging.cpp
+  src/DW1000.cpp
+  src/DW1000Time.cpp
+  src/DW1000Device.cpp
+  src/jetsonTX2GPIO/jetsonGPIO.c
 )
 
 ## Rename C++ executable without prefix
@@ -153,13 +153,12 @@ src/jetsonTX2GPIO/jetsonGPIO.c
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
-target_link_libraries(${PROJECT_NAME}_node ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

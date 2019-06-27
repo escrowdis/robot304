@@ -1,32 +1,29 @@
-#include "DW1000Ranging.h"
-#include "DW1000Device.h"
+#include "ros/ros.h"
 
-void newRange() {
-    printf("$ %x\t%f\n",
-        DW1000Ranging.getDistantDevice()->getShortAddress(),
-        DW1000Ranging.getDistantDevice()->getRange());
+#include "dwm1k.h"
+
+DWM1K dwm1k_;
+
+void loopCallback(const ros::TimerEvent&)
+{
+    dwm1k_.loop();
 }
 
-void newDevice(DW1000Device* device) {
+void calculateCallback(const ros::TimerEvent&)
+{
+    dwm1k_.calculateTag();
 }
 
-void inactiveDevice(DW1000Device* device) {
-}
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "dwm1k_node");
+    ros::NodeHandle nh;
 
-int main(int argc, char* argv) {
-    DW1000Ranging.initCommunication(9, 2, 3);
-    DW1000Ranging.attachNewRange(newRange);
-    DW1000Ranging.attachNewDevice(newDevice);
-    DW1000Ranging.attachInactiveDevice(inactiveDevice);
-    DW1000Ranging.useRangeFilter(true);
+    dwm1k_.init();
 
-    //start the hardware as tag
-    DW1000Ranging.startAsTag("01:00:5B:D5:A9:9A:E2:9C",DW1000.MODE_LONGDATA_RANGE_ACCURACY);
+    ros::Timer timer = nh.createTimer(ros::Duration(0.001), loopCallback);
+    ros::Timer timer1 = nh.createTimer(ros::Duration(0.5), calculateCallback);
 
-    while (1) {
-        DW1000Ranging.loop();
-        usleep(1000);
-    }
+    ros::spin();
 
     return 0;
 }
