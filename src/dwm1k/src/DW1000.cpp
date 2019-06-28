@@ -1651,7 +1651,7 @@ void DW1000Class::readBytes(byte cmd, uint16_t offset, byte data[], uint16_t n) 
         }
     }
 
-#ifdef VERBOSE_RW
+#if DEBUG_VERBOSE_RW
     printf("\nRD *** len(header): %d\n", headerLen);
     for (int i = 0; i < headerLen; ++i) {
         printf("%02x, ", header[i]);
@@ -1677,7 +1677,7 @@ void DW1000Class::readBytes(byte cmd, uint16_t offset, byte data[], uint16_t n) 
 
     int ret = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &xfer);
 
-#ifdef VERBOSE_RW
+#if DEBUG_VERBOSE_RW
     printf("status: %d\n", ret);
     for (int i = 0; i < len; ++i) {
         printf("%02x, ", rx[i]);
@@ -1753,7 +1753,7 @@ void DW1000Class::writeBytes(byte cmd, uint16_t offset, byte data[], uint16_t n)
             tx[i] = data[i - headerLen];
     }
 
-#ifdef VERBOSE_RW
+#if DEBUG_VERBOSE_RW
     printf("\nWR --- len(header): %d\n", headerLen);
     for (int i = 0; i < len; ++i) {
         printf("%02x, ", tx[i]);
@@ -1771,7 +1771,7 @@ void DW1000Class::writeBytes(byte cmd, uint16_t offset, byte data[], uint16_t n)
 
     int ret = ioctl (spi_fd, SPI_IOC_MESSAGE(1), &xfer);
 
-#ifdef VERBOSE_RW
+#if DEBUG_VERBOSE_RW
     printf("status: %d\n\n", ret);
 #endif
 

@@ -57,9 +57,8 @@
 
 //debug mode
 #ifndef DEBUG
-#define DEBUG true
+#define DEBUG false
 #endif
-
 
 class DW1000RangingClass {
 public:

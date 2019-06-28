@@ -48,6 +48,8 @@ static std::thread threadIRQ_;
 static __u32 mode_;
 #define TSMS_WAIT 10
 
+#define DEBUG_VERBOSE_RW false
+
 class DW1000Class {
 public:
     /* TODO impl: later

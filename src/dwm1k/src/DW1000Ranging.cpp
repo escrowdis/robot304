@@ -152,7 +152,9 @@ void DW1000RangingClass::startAsAnchor(char address[], const byte mode[]) {
     DW1000.convertToByte(address, _currentAddress);
     //write the address on the DW1000 chip
     DW1000.setEUI(address);
+#if DEBUG
     printf("device address: %s\n", address);
+#endif
     //we need to define a random short address:
     // randomSeed(analogRead(0));
     _currentShortAddress[0] = 1;
@@ -177,7 +179,9 @@ void DW1000RangingClass::startAsTag(char address[], const byte mode[]) {
     DW1000.convertToByte(address, _currentAddress);
     //write the address on the DW1000 chip
     DW1000.setEUI(address);
+#if DEBUG
     printf("device address: %s\n", address);
+#endif
     //we need to define a random short address:
     srand( time(NULL) );
     _currentShortAddress[0] = rand() % 256;
@@ -191,7 +195,9 @@ void DW1000RangingClass::startAsTag(char address[], const byte mode[]) {
     //defined type as anchor
     _type = TAG;
 
+#if DEBUG
     printf("### TAG ###\n");
+#endif
 }
 
 boolean DW1000RangingClass::addNetworkDevices(DW1000Device* device, boolean shortAddress) {
