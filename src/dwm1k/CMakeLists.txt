@@ -4,6 +4,9 @@ project(dwm1k)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+find_package (Eigen3 REQUIRED NO_MODULE)
+find_package(Ceres REQUIRED)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -102,10 +105,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES dwm1k
-#  CATKIN_DEPENDS roscpp std_msgs
-#  DEPENDS system_lib
+  # INCLUDE_DIRS include
+  # LIBRARIES dwm1k
+  # CATKIN_DEPENDS roscpp std_msgs
+  # DEPENDS system_lib
 )
 
 ###########
@@ -115,8 +118,9 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  # include
+  include
   ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
   src
   src/jetsonTX2GPIO
 )
@@ -158,6 +162,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
 )
 
 #############

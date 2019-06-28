@@ -6,8 +6,12 @@
 #include <chrono>
 #include <mutex>
 
+#include "costFunction.h"
+
 #include "DW1000Ranging.h"
 #include "DW1000Device.h"
+
+#define DEBUG_DWM1K false
 
 struct DATA_DW1000 {
     timepoint ts;
