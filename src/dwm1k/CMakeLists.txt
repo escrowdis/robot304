@@ -13,6 +13,7 @@ find_package(Ceres REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -49,11 +50,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  UWBData.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -70,10 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -107,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   # INCLUDE_DIRS include
   # LIBRARIES dwm1k
-  # CATKIN_DEPENDS roscpp std_msgs
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
   # DEPENDS system_lib
 )
 
@@ -140,7 +140,6 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node
   src/dwm1k_node.cpp
-  src/dwm1k.cpp
   src/DW1000Mac.cpp
   src/DW1000Ranging.cpp
   src/DW1000.cpp
@@ -161,6 +160,21 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+)
+
+# trilateration
+set(TRILAT trilateration)
+add_executable(${TRILAT}_node
+  src/trilateration_node.cpp
+  src/trilateration.cpp
+)
+add_dependencies(${TRILAT}_node
+${${TRILAT}_EXPORTED_TARGETS}
+${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(${TRILAT}_node
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
 )

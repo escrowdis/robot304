@@ -1,0 +1,10 @@
+<launch>
+  <rosparam file="$(find dwm1k)/config/lab203.yaml" />
+  <arg name="pos_tag_init" default="[0.0, 5.5, 0.9]" />
+  <rosparam param="/dwm1k/pos_tag_init" subst_value="True">$(arg pos_tag_init)</rosparam>
+
+  <node name="dwm1k" pkg="dwm1k" type="dwm1k_node" respawn="true" output="screen" />
+
+  <node name="trilateration" pkg="dwm1k" type="trilateration_node" respawn="true" output="screen">
+  </node>
+</launch>
