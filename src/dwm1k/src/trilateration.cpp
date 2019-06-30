@@ -38,6 +38,8 @@ void Trilateration::init(const std::vector<float> &data, const float &bias, cons
     cost_function_ =
         new ceres::AutoDiffCostFunction<LocoCostFunctor, 1, 3>(loco_functor_);
     problem_.AddResidualBlock(cost_function_, NULL, pos_tag_);
+    for (int i = 0; i < 3; ++i)
+        problem_.SetParameterLowerBound(pos_tag_, i, 0.0);
 
     options_.linear_solver_type = ceres::DENSE_QR;
     options_.minimizer_progress_to_stdout = false;
@@ -53,8 +55,13 @@ bool Trilateration::calculateTag(float *pos_tag) {
 
     for (int i = 0; i < loco_functor_->dists_.size(); ++i) {
         int id = id_anchors_[i];
-        loco_functor_->dists_[i] = data_[id].empty() ? -1.0 : 
-            (double)data_[id].back().distance + bias_;
+        float avg = 0.0;
+        for (int j = 0; j < data_[id].size(); ++j) {
+            avg += (data_[id][j].distance - avg) / static_cast<float>(j + 1);
+        }
+
+        loco_functor_->dists_[i] = data_[id].empty() ? -1.0 :
+            static_cast<double>(avg) + bias_;
     }
 
     Solve(options_, &problem_, &summary_);
