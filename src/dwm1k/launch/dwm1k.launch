@@ -5,6 +5,5 @@
 
   <node name="dwm1k" pkg="dwm1k" type="dwm1k_node" respawn="true" output="screen" />
 
-  <node name="trilateration" pkg="dwm1k" type="trilateration_node" respawn="true" output="screen">
-  </node>
+  <node name="trilateration" pkg="dwm1k" type="trilateration_node" respawn="true" output="screen" />
 </launch>
