@@ -11,7 +11,11 @@ void Trilateration::addData(const dwm1k::UWBData::ConstPtr& msg) {
 
     {
         std::lock_guard<std::mutex> lk(mutexData_);
-        dataBuf_[tmp_.id_anchor].emplace_back(tmp_);
+        dataBuf_[tmp_.id_anchor].v_data.emplace_back(tmp_);
+
+        dataBuf_[tmp_.id_anchor].avg +=
+            (msg->distance - dataBuf_[tmp_.id_anchor].avg) /
+            static_cast<float>(dataBuf_[tmp_.id_anchor].v_data.size());
     }
 }
 
@@ -19,10 +23,11 @@ void Trilateration::init(const std::vector<float> &data, const float &bias, cons
     bias_ = bias;
 
     int len = data.size();
-    Eigen::MatrixXd anchors((int)(len / 4), DIM_POSE);
+    num_anchor_ = len / DATA_LEN_PER_ANCHOR;
+    Eigen::MatrixXd anchors(num_anchor_, DIM_POSE);
     int r = -1, c = 0;
     for (int i = 0; i < len; ++i) {
-        if (0 == i % 4) {
+        if (0 == i % DATA_LEN_PER_ANCHOR) {
             id_anchors_.emplace_back(data[i]);
             ++r;
             c = 0;
@@ -45,7 +50,7 @@ void Trilateration::init(const std::vector<float> &data, const float &bias, cons
     options_.minimizer_progress_to_stdout = false;
 }
 
-bool Trilateration::calculateTag(float *pos_tag) {
+bool Trilateration::calculateTag(float *pos_tag, std::vector<std::pair<uint8_t, float>> &dists_avg) {
     {
         std::lock_guard<std::mutex> lk(mutexData_);
         data_.swap(dataBuf_);
@@ -53,15 +58,13 @@ bool Trilateration::calculateTag(float *pos_tag) {
     }
     if (data_.empty()) return false;
 
-    for (int i = 0; i < loco_functor_->dists_.size(); ++i) {
-        int id = id_anchors_[i];
-        float avg = 0.0;
-        for (int j = 0; j < data_[id].size(); ++j) {
-            avg += (data_[id][j].distance - avg) / static_cast<float>(j + 1);
-        }
+    for (int i = 0; i < num_anchor_; ++i) {
+        uint8_t id = id_anchors_[i];
+        loco_functor_->dists_[i] = data_[id].v_data.empty() ? -1.0 :
+            static_cast<double>(data_[id].avg + bias_);
 
-        loco_functor_->dists_[i] = data_[id].empty() ? -1.0 :
-            static_cast<double>(avg) + bias_;
+        if (!data_[id].v_data.empty())
+            dists_avg.emplace_back(std::make_pair(id, data_[id].avg));
     }
 
     Solve(options_, &problem_, &summary_);
