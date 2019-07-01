@@ -67,19 +67,19 @@ int main(int argc, char **argv) {
             pos_tag[2]);
     }
     else
-        ROS_WARN("Failed to retrieve '/pos_tag_init', set origin to pos_tag.");
+        ROS_WARN("Failed to retrieve '/dwm1k/pos_tag_init', set origin to pos_tag.");
 
     trilat_.init(anchors, bias, pos_tag);
 
-    ros::Subscriber sub = nh.subscribe<dwm1k::UWBData>("/uwb_data", 50, dataCallback);
+    ros::Subscriber sub = nh.subscribe<dwm1k::UWBData>("/dwm1k/uwb_data", 50, dataCallback);
 
-    pub_tag_ = nh.advertise<geometry_msgs::PoseStamped>("/pos_tag_estimated", 50);
+    pub_tag_ = nh.advertise<geometry_msgs::PoseStamped>("/dwm1k/pos_tag_estimated", 50);
     pos_tag_est_.pose.orientation.w = 1.0;
     pos_tag_est_.pose.orientation.x = 0.0;
     pos_tag_est_.pose.orientation.y = 0.0;
     pos_tag_est_.pose.orientation.z = 0.0;
 
-    pub_anchors_ = nh.advertise<dwm1k::UWBData>("/dist_avg_anchor", 50);
+    pub_anchors_ = nh.advertise<dwm1k::UWBData>("/dwm1k/dist_avg_anchor", 50);
 
     ros::Timer timer = nh.createTimer(ros::Duration(0.5), calculateCallback);
 
