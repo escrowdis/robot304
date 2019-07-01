@@ -10,6 +10,9 @@
 
 #define DEBUG_DWM1K false
 
+#define DIM 3
+#define DIM_POSE 3
+
 class Trilateration {
 
     std::map<uint16_t, std::vector<dwm1k::UWBData>> data_, dataBuf_;
@@ -21,6 +24,8 @@ class Trilateration {
     dwm1k::UWBData tmp_;
 
     std::vector<uint8_t> id_anchors_;
+
+    double pos_tag_[DIM_POSE];
 
 public:
     void init(const std::vector<float> &data,

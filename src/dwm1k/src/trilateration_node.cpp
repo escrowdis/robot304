@@ -4,7 +4,7 @@
 #include "geometry_msgs/PoseStamped.h"
 
 Trilateration trilat_;
-float pos_tag_now_[3];
+float pos_tag_now_[DIM_POSE];
 
 ros::Publisher pub_;
 geometry_msgs::PoseStamped pos_tag_est_;
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "trilateration_node");
     ros::NodeHandle nh;
 
-    std::vector<float> anchors, pos_tag(3, 0);
+    std::vector<float> anchors, pos_tag(DIM_POSE, 0);
     float bias = 0.0;
     if (nh.getParam("/dwm1k/anchors", anchors)) {
         ROS_INFO("Total %d anchor(s)", anchors.size() / 4);

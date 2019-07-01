@@ -19,7 +19,7 @@ void Trilateration::init(const std::vector<float> &data, const float &bias, cons
     bias_ = bias;
 
     int len = data.size();
-    Eigen::MatrixXd anchors((int)(len / 4), 3);
+    Eigen::MatrixXd anchors((int)(len / 4), DIM_POSE);
     int r = -1, c = 0;
     for (int i = 0; i < len; ++i) {
         if (0 == i % 4) {
@@ -31,14 +31,14 @@ void Trilateration::init(const std::vector<float> &data, const float &bias, cons
         anchors(r, c++) = data[i];
     }
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < DIM_POSE; ++i)
         pos_tag_[i] = static_cast<double>(pos_tag[i]);
 
-    loco_functor_ = new LocoCostFunctor(anchors);
+    loco_functor_ = new LocoCostFunctor(anchors, DIM);
     cost_function_ =
-        new ceres::AutoDiffCostFunction<LocoCostFunctor, 1, 3>(loco_functor_);
+        new ceres::AutoDiffCostFunction<LocoCostFunctor, 1, DIM_POSE>(loco_functor_);
     problem_.AddResidualBlock(cost_function_, NULL, pos_tag_);
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < DIM_POSE; ++i)
         problem_.SetParameterLowerBound(pos_tag_, i, 0.0);
 
     options_.linear_solver_type = ceres::DENSE_QR;
@@ -74,7 +74,7 @@ bool Trilateration::calculateTag(float *pos_tag) {
         pos_tag_[2]);
 #endif
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < DIM_POSE; ++i)
         pos_tag[i] = static_cast<float>(pos_tag_[i]);
 
     return true;
