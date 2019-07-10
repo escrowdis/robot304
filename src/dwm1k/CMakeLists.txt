@@ -4,9 +4,6 @@ project(dwm1k)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
-find_package (Eigen3 REQUIRED NO_MODULE)
-find_package(Ceres REQUIRED)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -120,7 +117,6 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${CERES_INCLUDE_DIRS}
   src
   src/jetsonTX2GPIO
 )
@@ -156,23 +152,32 @@ add_executable(${PROJECT_NAME}_node
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
-  ${CERES_LIBRARIES}
 )
 
 # trilateration
+find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Ceres REQUIRED)
+
+include_directories(
+  ${CERES_INCLUDE_DIRS}
+)
+
 set(TRILAT trilateration)
 add_executable(${TRILAT}_node
   src/trilateration_node.cpp
   src/trilateration.cpp
 )
 add_dependencies(${TRILAT}_node
-${${TRILAT}_EXPORTED_TARGETS}
-${catkin_EXPORTED_TARGETS}
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(${TRILAT}_node
   ${catkin_LIBRARIES}

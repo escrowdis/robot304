@@ -155,7 +155,7 @@ void DW1000Class::begin(uint8_t irq, uint8_t rst) {
     // start SPI
     std::string dev = "/dev/spidev3.0";
     if((spi_fd = open(dev.c_str(), O_RDWR)) < 0){
-        printf("error opening \n", dev.c_str());
+        printf("error opening %s\n", dev.c_str());
     }
 
     // SPI.usingInterrupt(digitalPinToInterrupt(irq));
@@ -179,7 +179,7 @@ void DW1000Class::begin(uint8_t irq, uint8_t rst) {
 
     gpioSetDirection(pinIRQ_, inputPin);
     usleep(tsGPIOWait_);
-    threadIRQ_ = std::thread(DW1000.handleInterrupt);
+    threadIRQ_ = std::thread(&DW1000.handleInterrupt);
 }
 
 void DW1000Class::manageLDE() {
@@ -938,7 +938,7 @@ void DW1000Class::getTempAndVbat(float& temp, float& vbat) {
     byte step5 = 0x00; writeBytes(TX_CAL, NO_SUB, &step5, 1);
     byte sar_lvbat = 0; readBytes(TX_CAL, 0x03, &sar_lvbat, 1);
     byte sar_ltemp = 0; readBytes(TX_CAL, 0x04, &sar_ltemp, 1);
-    
+
     // calculate voltage and temperature
     vbat = (sar_lvbat - _vmeas3v3) / 173.0f + 3.3f;
     temp = (sar_ltemp - _tmeas23C) * 1.14f + 23.0f;
