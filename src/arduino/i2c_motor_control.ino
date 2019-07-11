@@ -254,6 +254,7 @@ void computeEncoder() {
     ts_prev_enc = ts_now_enc;
 
     // convert direction
+    // TODO: restrict encoder in case of outlier
     float val = VAL_ENC2RPM / (float)dt;
     rpm_l = (float)enc_pul_l * val;
     rpm_r = -(float)enc_pul_r * val;
@@ -261,8 +262,8 @@ void computeEncoder() {
     vel_l = rpm_l * VAL_RPM2VEL;
     vel_r = rpm_r * VAL_RPM2VEL;
 
-    odom_l += vel_l * dt * TS_MS2S;
-    odom_r += vel_r * dt * TS_MS2S;
+    odom_l = vel_l * dt * TS_MS2S;
+    odom_r = vel_r * dt * TS_MS2S;
 
     pidControl();
 

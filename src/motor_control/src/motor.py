@@ -28,22 +28,24 @@ def sendI2CData(data):
 def readEncoder():
   global i2cReading, threadRunning, interval2Read
   if i2cReading or not threadRunning:
-    return 1
+    return -1
   i2cReading = True
   msg = i2c_msg.read(ADDR_SLAVE, LEN_DATA_I2C_IN)
   bus.i2c_rdwr(msg)
   if not threadRunning:
     i2cReading = False
-    return 1
+    return -1
 
-  print("readEncoder ---")
   data = list(msg)
-  pos_l = struct.unpack('<f', ''.join(chr(i) for i in data[:4]))
-  pos_r = struct.unpack('<f', ''.join(chr(i) for i in data[4:8]))
+  odom_l = struct.unpack('<f', ''.join(chr(i) for i in data[:4]))
+  odom_r = struct.unpack('<f', ''.join(chr(i) for i in data[4:8]))
   vel_l = struct.unpack('<f', ''.join(chr(i) for i in data[8:12]))
   vel_r = struct.unpack('<f', ''.join(chr(i) for i in data[12:16]))
-  print("{}, {}, {}, {}".format(pos_l, pos_r, vel_l, vel_r))
-  print("---------------")
+  if __debug__:
+    print("readEncoder [odom_l, odom_r, vel_l, vel_r] ---")
+    print("{}, {}, {}, {}".format(odom_l, odom_r, vel_l, vel_r))
+    print("---------------")
+
   i2cReading = False
   if threadRunning:
     threading.Timer(interval2Read, readEncoder).start()
