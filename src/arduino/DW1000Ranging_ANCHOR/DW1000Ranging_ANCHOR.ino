@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * @todo
  *  - move strings to flash (less RAM consumption)
  *  - fix deprecated convertation form string to char* startAsAnchor
@@ -24,7 +24,7 @@ void setup() {
   DW1000Ranging.attachInactiveDevice(inactiveDevice);
   //Enable the filter to smooth the distance
   //DW1000Ranging.useRangeFilter(true);
-  
+
   //we start the module as an anchor
   DW1000Ranging.startAsAnchor("82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, (byte)4);
 }

@@ -293,13 +293,13 @@ void computeEncoder() {
   }
 }
 
-void pidControl(){  
+void pidControl(){
   if (abs(vel_r - 0.0) > EPSILON &&
       abs(pwm_mr - 0.0) > EPSILON) {
       pid_input = (double)vel_l;
       pid_setpoint = (double)(vel_r * pwm_ml / pwm_mr);
       pwmPID.Compute();
-      float dev = (float)pid_output * pwm_mr / vel_r;      
+      float dev = (float)pid_output * pwm_mr / vel_r;
       cur_pwm_ml = cur_pwm_ml + dev;
 
 #ifdef DEBUG
@@ -355,7 +355,7 @@ void testMotorControl() {
     pwm_mr = foo[id_foo];
     pwm_ml = (pwm_ml < MAX_MOTOR_VAL ? pwm_ml : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_ml : -MAX_MOTOR_VAL;
     pwm_mr = (pwm_mr < MAX_MOTOR_VAL ? pwm_mr : MAX_MOTOR_VAL) > -MAX_MOTOR_VAL ? pwm_mr : -MAX_MOTOR_VAL;
-    
+
     analogWrite(IN1, LOW);
     analogWrite(IN2, (uint8_t)pwm_ml);
     analogWrite(IN3, (uint8_t)pwm_mr);

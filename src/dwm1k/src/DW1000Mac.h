@@ -80,7 +80,7 @@ public:
 private:
 	uint8_t _seqNumber = 0;
 	void reverseArray(byte to[], byte from[], int16_t size);
-	
+
 };
 
 

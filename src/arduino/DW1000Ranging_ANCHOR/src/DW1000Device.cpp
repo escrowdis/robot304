@@ -17,7 +17,7 @@
  * @file DW1000Device.cpp
  * Arduino global library (source file) working with the DW1000 library
  * for the Decawave DW1000 UWB transceiver IC.
- * 
+ *
  * @todo complete this class
  */
 
