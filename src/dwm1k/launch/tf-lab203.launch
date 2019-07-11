@@ -1,6 +1,7 @@
 <launch>
   <!-- Sync with lab203.yaml -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="anchor2" args="0.00 6.62 0.90 0 0 0 1 map anchor2" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="anchor2" args="2.95 6.58 0.84 0 0 0 1 map anchor2" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="anchor3" args="0.00 4.42 0.90 0 0 0 1 map anchor3" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="anchor4" args="8.95 5.92 1.35 0 0 0 1 map anchor4" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="anchor5" args="4.75 4.78 0.84 0 0 0 1 map anchor5" />
 </launch>

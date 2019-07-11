@@ -46,7 +46,7 @@ static uint32_t spiSpeed = 2000000L;
 static uint16_t spiDelay = 0;
 static std::thread threadIRQ_;
 static __u32 mode_;
-#define TSMS_WAIT 10
+#define TSMS_WAIT 1
 
 #define DEBUG_VERBOSE_RW false
 

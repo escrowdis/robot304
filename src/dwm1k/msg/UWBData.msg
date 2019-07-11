@@ -1,3 +1,3 @@
 Header header
-uint8 id_anchor
+uint16 id_anchor
 float32 distance

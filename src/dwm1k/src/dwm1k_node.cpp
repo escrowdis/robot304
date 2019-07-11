@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "dwm1k_node");
     ros::NodeHandle nh;
 
-    pub_ = nh.advertise<dwm1k::UWBData>("/dwm1k/uwb_data", 50);
+    pub_ = nh.advertise<dwm1k::UWBData>("/dwm1k/uwb_data", 100);
 
     init();
 

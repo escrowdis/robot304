@@ -1,0 +1,22 @@
+<launch>
+  <rosparam file="$(find dwm1k)/config/lab203.yaml" />
+
+  <arg name="pos_tag_init" default="[0.00, 5.00, 0.90]" />
+  <rosparam param="pos_tag_init" ns="/dwm1k/trilateration" subst_value="True">$(arg pos_tag_init)</rosparam>
+  <arg name="calib" default="false" />
+  <arg name="freq_trilat" default="4" />
+  <arg name="max_dist" default="15.0" />
+  <arg name="min_dist" default="0.0" />
+
+  <node name="trilateration" ns="dwm1k" pkg="dwm1k" type="trilateration_node" respawn="false" output="screen">
+    <param name="/calibrate" value="$(arg calib)" />
+    <param name="/freq_trilateration" value="$(arg freq_trilat)" />
+    <param name="/max_dist" value="$(arg max_dist)" />
+    <param name="/min_dist" value="$(arg min_dist)" />
+  </node>
+
+  <!-- TODO: Move out to visualization or merge visualization inside? -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find chicken)/rviz/lab203.rviz" />
+  <node name="visualization" pkg="visualization" type="visualization_node" respawn="true" output="screen" />
+  <include file="$(find dwm1k)/launch/tf-lab203.launch" />
+</launch>
